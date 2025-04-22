@@ -92,17 +92,28 @@ install_opencv () {
   sudo rm -rf opencv*
   # download the 4.10.0 version
   wget -O opencv.zip https://github.com/opencv/opencv/archive/4.10.0.zip 
-  wget -O opencv_contrib.zip https://github.com/opencv/opencv_contrib/archive/4.10.0.zip 
   # unpack
   unzip opencv.zip 
-  unzip opencv_contrib.zip 
+  
   # Some administration to make life easier later on
   mv opencv-4.10.0 opencv
-  mv opencv_contrib-4.10.0 opencv_contrib
+  
   # clean up the zip files
   rm opencv.zip
-  rm opencv_contrib.zip
-  
+
+  # If building in container on Jetson Nano with r32.7.1 base container then need this fix
+  # for tuple missing error
+  if [ -f /.dockerenv ]; then
+    echo "Running inside Docker: Cloning latest opencv_contrib 4.x branch for CUDA tuple fix"
+    git clone --branch 4.x https://github.com/opencv/opencv_contrib.git
+  else
+    echo "Running on host system"
+    wget -O opencv_contrib.zip https://github.com/opencv/opencv_contrib/archive/4.10.0.zip 
+    unzip opencv_contrib.zip
+    mv opencv_contrib-4.10.0 opencv_contrib
+    rm opencv_contrib.zip
+  fi
+
   # set install dir
   cd ~/opencv
   mkdir build
@@ -110,7 +121,7 @@ install_opencv () {
   
   # run cmake
   cmake -D CMAKE_BUILD_TYPE=RELEASE \
-cmake -D CMAKE_INSTALL_PREFIX=/usr \
+  cmake -D CMAKE_INSTALL_PREFIX=/usr \
   -D OPENCV_EXTRA_MODULES_PATH=~/opencv_contrib/modules \
   -D EIGEN_INCLUDE_PATH=/usr/include/eigen3 \
   -D WITH_OPENCL=OFF \
